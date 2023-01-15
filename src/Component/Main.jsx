@@ -1,57 +1,79 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "./Main.css";
-
+//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 export const Weather = () => {
   const [append, setAppend] = useState([]);
   const [forecast, setForecast] = useState([]);
   const [text, setText] = useState("");
   let key = "d9a7dab350bb8264d81b26a1254ebb7a";
-  let map = document.querySelector("#gmap_canvas");
-
-  //daily weather data.................................
+  //::::::::::::::::::::::::::::::::: daily weather data :::::::::::::::::::::::::::::
   const handleSearch = () => {
     getWeather();
-    getForecast();
+    setText("");
   };
-
+  //::::::::::::::::::::::::::::::::::::: ONCLICK GETTING THE DATA :::::::::::::::::::::::::::::::::
   async function getWeather() {
-    try {
-      let res = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?q=${text}&appid=${key}&units=metric`
-      );
-      let data = await res.json();
-      //console.log(data);
-      setAppend(data);
-    } catch (err) {
-      alert(err.message);
-    }
-  }
-  async function getForecast() {
     let lat = append.coord.lat;
     let lon = append.coord.lon;
-
     try {
-      let res = await fetch(
-        `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=current,hourly,minutely,alerts&units=metric&appid=${key}`
-      );
-      let data = await res.json();
-      setForecast(data.daily);
-    } catch (err) {
-      console.log(err);
+      const [currentWeatherResponse, forecastResponse] = await Promise.all([
+        axios.get(
+          `https://api.openweathermap.org/data/2.5/weather?q=${text}&appid=${key}&units=metric`
+        ),
+        axios.get(
+          `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=current,hourly,minutely,alerts&units=metric&appid=${key}`
+        ),
+      ]);
+      setAppend(currentWeatherResponse.data);
+      setForecast(forecastResponse.data.daily);
+    } catch (error) {
+      console.log(error);
     }
   }
-  console.log(append);
-  console.log(forecast);
+
+  //:::::::::::::::::::: WHEN USER OPEN THE APP BY DEFAULT ::::::::::::::::::::
+
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(async (position) => {
       const { latitude, longitude } = position.coords;
       const apiKey = key;
       const url = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiKey}&units=metric`;
+      const furl = `https://api.openweathermap.org/data/2.5/onecall?lat=${latitude}&lon=${longitude}&exclude=current,hourly,minutely,alerts&units=metric&appid=${apiKey}`;
+      const fresult = await axios(furl);
       const result = await axios(url);
       setAppend(result.data);
+      setForecast(fresult.data.daily);
     });
   }, []);
+
+  //::::::::::::::::::::::::::::::: MAP DATA :::::::::::::::::::::::::::::::::::::
+
+  const Data = () => {
+    return (
+      <>
+        {forecast?.map((el, i) => (
+          <div>
+            {new Date(el.dt * 1000).toLocaleDateString()}
+            <br />
+            -----------------
+            {el.weather[0].main}
+            <img
+              style={{ marginTop: "-1rem", marginBottom: "-1rem" }}
+              src={`http://openweathermap.org/img/wn/${el.weather[0].icon}@2x.png`}
+              alt="Weather icon"
+            />
+            <br />
+            Max : {Math.round(el.temp.max)} &deg;C
+            <br />
+            Min : {Math.round(el.temp.min)} &deg;C
+            <br />
+            Wind: {Math.round(el.wind_speed)} kph
+          </div>
+        ))}
+      </>
+    );
+  };
 
   return (
     <div>
@@ -75,6 +97,7 @@ export const Weather = () => {
                       <input
                         id="input"
                         type="text"
+                        value={text}
                         onChange={(e) => setText(e.target.value)}
                       />{" "}
                       <button id="button" onClick={handleSearch}>
@@ -98,11 +121,9 @@ export const Weather = () => {
                       </p>
                       <h3>{append.weather?.map((el) => el.main)}</h3>
                     </div>
-                    weather forecast
-                    <div>
-                      {forecast?.map((el)=>
-                         el.clouds
-                      )}
+                    <h3>weather forecast</h3>
+                    <div id="forecastdiv">
+                      <Data />
                     </div>
                   </div>
                 </div>
@@ -114,3 +135,17 @@ export const Weather = () => {
     </div>
   );
 };
+
+//::::::::::::::::::::: TREE SHAKING :::::::::::::::::
+ //   try {
+  //     const [currentWeatherResponse, forecastResponse] = await Promise.all([
+  //         axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}`),
+  //         axios.get(`https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}`)
+  //     ]);
+  //     console.log(currentWeatherResponse.data);
+  //     console.log(forecastResponse.data);
+  // } catch (error) {
+  //     console.log(error);
+  // }
+  //`https://api.openweathermap.org/data/2.5/weather?q=${text}&appid=${key}&units=metric`--Main
+  //`https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=current,hourly,minutely,alerts&units=metric&appid=${key}`
