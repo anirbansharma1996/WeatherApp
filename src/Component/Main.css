@@ -27,7 +27,8 @@ body {
   text-align: center;
   border: 1px solid gray;
   border-radius: 20px;
-  background-color: #f9f9fad9;
+  opacity: 0.5;
+  font-weight: 500;
 }
 #button {
   background-color: #7bd2efa2;
@@ -54,8 +55,9 @@ body {
   margin: auto;
   margin-top: 1rem;
   padding-top: 1rem;
+  background-color: #4e4b4b45;
 }
-
+/* #4e4b4b45; */
 @media (max-width: 992px) {
   .padding {
     padding: 1.5rem;

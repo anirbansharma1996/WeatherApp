@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import "./Main.css";
 //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -6,34 +6,9 @@ export const Weather = () => {
   const [append, setAppend] = useState([]);
   const [forecast, setForecast] = useState([]);
   const [text, setText] = useState("");
+  const [btnText , setBtnText] = useState(false)
   let key = "d9a7dab350bb8264d81b26a1254ebb7a";
-  //::::::::::::::::::::::::::::::::: daily weather data :::::::::::::::::::::::::::::
-  const handleSearch = () => {
-    getWeather();
-    setText("");
-  };
-  //::::::::::::::::::::::::::::::::::::: ONCLICK GETTING THE DATA :::::::::::::::::::::::::::::::::
-  async function getWeather() {
-    let lat = append.coord.lat;
-    let lon = append.coord.lon;
-    try {
-      const [currentWeatherResponse, forecastResponse] = await Promise.all([
-        axios.get(
-          `https://api.openweathermap.org/data/2.5/weather?q=${text}&appid=${key}&units=metric`
-        ),
-        axios.get(
-          `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=current,hourly,minutely,alerts&units=metric&appid=${key}`
-        ),
-      ]);
-      setAppend(currentWeatherResponse.data);
-      setForecast(forecastResponse.data.daily);
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
   //:::::::::::::::::::: WHEN USER OPEN THE APP BY DEFAULT ::::::::::::::::::::
-
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(async (position) => {
       const { latitude, longitude } = position.coords;
@@ -47,34 +22,26 @@ export const Weather = () => {
     });
   }, []);
 
-  //::::::::::::::::::::::::::::::: MAP DATA :::::::::::::::::::::::::::::::::::::
-
-  const Data = () => {
-    return (
-      <>
-        {forecast?.map((el, i) => (
-          <div>
-            {new Date(el.dt * 1000).toLocaleDateString()}
-            <br />
-            -----------------
-            {el.weather[0].main}
-            <img
-              style={{ marginTop: "-1rem", marginBottom: "-1rem" }}
-              src={`http://openweathermap.org/img/wn/${el.weather[0].icon}@2x.png`}
-              alt="Weather icon"
-            />
-            <br />
-            Max : {Math.round(el.temp.max)} &deg;C
-            <br />
-            Min : {Math.round(el.temp.min)} &deg;C
-            <br />
-            Wind: {Math.round(el.wind_speed)} kph
-          </div>
-        ))}
-      </>
-    );
-  };
-
+  //::::::::::::::::::::::::::::::::::::: ONCLICK GETTING THE DATA :::::::::::::::::::::::::::::::::
+  async function handleSearch() {
+    try {
+      let lat = append.coord.lat;
+      let lon = append.coord.lon;
+      const [currentWeatherResponse, forecastResponse] = await Promise.all([
+        axios.get(
+          `https://api.openweathermap.org/data/2.5/weather?q=${text}&appid=${key}&units=metric`
+        ),
+        axios.get(
+          `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=current,hourly,minutely,alerts&units=metric&appid=${key}`
+        ),
+      ]);
+      setAppend(currentWeatherResponse.data);
+      setForecast(forecastResponse.data.daily);
+      setBtnText(!btnText)
+    } catch (error) {
+      console.log(error);
+    }
+  }
   return (
     <div>
       <div class="page-content page-container" id="page-content">
@@ -97,11 +64,10 @@ export const Weather = () => {
                       <input
                         id="input"
                         type="text"
-                        value={text}
                         onChange={(e) => setText(e.target.value)}
                       />{" "}
                       <button id="button" onClick={handleSearch}>
-                        <b style={{ color: "white" }}>SEARCH</b>
+                        <b style={{ color: "white" }}>{btnText ? "FORECAST" : "WEATHER"}</b>
                       </button>
                     </div>
                     <div class="mr-auto">
@@ -123,7 +89,7 @@ export const Weather = () => {
                     </div>
                     <h3>weather forecast</h3>
                     <div id="forecastdiv">
-                      <Data />
+                      <Data props={forecast} />
                     </div>
                   </div>
                 </div>
@@ -135,17 +101,46 @@ export const Weather = () => {
     </div>
   );
 };
+//::::::::::::::::::::::::::::::: MAP DATA :::::::::::::::::::::::::::::::::::::
+
+const Data = ({ props }) => {
+  //console.log(props)
+  const forecast = props;
+  return (
+    <>
+      {forecast?.map((el, i) => (
+        <div key={i}>
+          {new Date(el.dt * 1000).toLocaleDateString()}
+          <br />
+          -----------------
+          {el.weather[0].main}
+          <img
+            style={{ marginTop: "-1rem", marginBottom: "-1rem" }}
+            src={`http://openweathermap.org/img/wn/${el.weather[0].icon}@2x.png`}
+            alt="Weather icon"
+          />
+          <br />
+          Max : {Math.round(el.temp.max)} &deg;C
+          <br />
+          Min : {Math.round(el.temp.min)} &deg;C
+          <br />
+          Wind: {Math.round(el.wind_speed)} kph
+        </div>
+      ))}
+    </>
+  );
+};
 
 //::::::::::::::::::::: TREE SHAKING :::::::::::::::::
- //   try {
-  //     const [currentWeatherResponse, forecastResponse] = await Promise.all([
-  //         axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}`),
-  //         axios.get(`https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}`)
-  //     ]);
-  //     console.log(currentWeatherResponse.data);
-  //     console.log(forecastResponse.data);
-  // } catch (error) {
-  //     console.log(error);
-  // }
-  //`https://api.openweathermap.org/data/2.5/weather?q=${text}&appid=${key}&units=metric`--Main
-  //`https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=current,hourly,minutely,alerts&units=metric&appid=${key}`
+//   try {
+//     const [currentWeatherResponse, forecastResponse] = await Promise.all([
+//         axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}`),
+//         axios.get(`https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}`)
+//     ]);
+//     console.log(currentWeatherResponse.data);
+//     console.log(forecastResponse.data);
+// } catch (error) {
+//     console.log(error);
+// }
+//`https://api.openweathermap.org/data/2.5/weather?q=${text}&appid=${key}&units=metric`--Main
+//`https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=current,hourly,minutely,alerts&units=metric&appid=${key}`
